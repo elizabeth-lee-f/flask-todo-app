@@ -11,11 +11,11 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      # 1. Скачиваем код репозитория
+      # скачиваем код репозитория
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Устанавливаем Python 3.12
+      # устанавливаем Python 3.12
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -26,6 +26,18 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # исправляем баг в репозитории (отсутствует модуль 'app')
+      - name: Fix missing app module
+        run: |
+          # создаем файл app.py с функцией create_app
+          cat > app.py << 'EOF'
+          from application import create_app
+          app = create_app()
+          if __name__ == '__main__':
+              app.run()
+          EOF
+          echo "Created app.py"
 
       # инициализация базы данных SQLite и запуск сервера
       - name: Init DB and Start Flask Server
@@ -50,7 +62,7 @@ jobs:
             sleep 2
           done
           
-
+          # показываем последние строки логов сервера
           echo "=== Server logs ==="
           cat server.log
 
