@@ -11,11 +11,11 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      # скачиваем код репозитория
+      # 1. Скачиваем код репозитория
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # устанавливаем Python 3.12
+      # 2. Устанавливаем Python 3.12
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -30,12 +30,29 @@ jobs:
       # инициализация базы данных SQLite и запуск сервера
       - name: Init DB and Start Flask Server
         run: |
+          # инициализация БД
           python manage.py db init || true
           python manage.py db migrate || true
           python manage.py db upgrade || true
           
-          python manage.py runserver &
-          sleep 5
+          # запускаем сервер в фоне с сохранением логов
+          nohup python manage.py runserver > server.log 2>&1 &
+          SERVER_PID=$!
+          echo "Server started with PID: $SERVER_PID"
+          
+          # ждем и проверяем, что сервер запустился
+          for i in {1..10}; do
+            if curl -s http://localhost:5000/ > /dev/null 2>&1; then
+              echo "Server is running on port 5000"
+              break
+            fi
+            echo "Waiting for server... attempt $i"
+            sleep 2
+          done
+          
+
+          echo "=== Server logs ==="
+          cat server.log
 
       # проверяем, что сервер отвечает
       - name: Smoke test Flask server
